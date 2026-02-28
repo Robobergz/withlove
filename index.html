@@ -34,44 +34,65 @@
     #landing {
       position: absolute; inset: 0;
       display: flex; flex-direction: column;
-      padding: 48px 28px 52px;
+      padding: 48px 28px 20px;
       transition: opacity 0.4s ease, transform 0.4s ease;
     }
 
-    #quote-text {
-      font-size: clamp(30px, 9vw, 44px);
+    /* Quote container — fixed height so it never bleeds into divider */
+    #quote-container {
+      height: 38vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Two quote slots for clean crossfade — no leftover artifacts */
+    .quote-slot {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      font-size: clamp(28px, 8.5vw, 42px);
       font-weight: 900;
       line-height: 1.18;
       color: rgba(255,255,255,0.92);
       letter-spacing: -0.01em;
-      transition: opacity 0.7s ease;
+      transition: opacity 0.8s ease;
     }
-    #quote-text.fading { opacity: 0; }
+    .quote-slot.hidden { opacity: 0; }
+    .quote-slot.visible { opacity: 1; }
 
     #divider {
-      width: 2px; height: 72px;
+      width: 2px; height: 60px;
       background: rgba(255,255,255,0.5);
       border-radius: 2px;
-      margin: 28px 0 28px 2px;
+      margin: 20px 0 20px 2px;
+      flex-shrink: 0;
     }
 
     #landing-spacer { flex: 1; }
 
     #bottom-prompt {
-      font-size: clamp(30px, 9vw, 44px);
+      font-size: clamp(28px, 8.5vw, 42px);
       font-weight: 900;
       line-height: 1.18;
       color: rgba(255,255,255,0.55);
       letter-spacing: -0.01em;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
     }
     #bottom-prompt.active { color: rgba(255,255,255,0.92); }
 
+    #privacy-note {
+      font-size: 11px;
+      font-weight: 800;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.03em;
+      margin-top: 14px;
+      padding-bottom: env(safe-area-inset-bottom, 8px);
+      flex-shrink: 0;
+    }
+
     /* ══════════════════════
        COMPOSE SCREEN
-       Layout: fixed top = history (scrolls up out of view)
-                fixed bottom = input area
     ══════════════════════ */
     #compose {
       position: absolute; inset: 0;
@@ -84,11 +105,9 @@
       opacity: 1; pointer-events: all;
     }
 
-    /* History sits at top, gets pushed up as input grows */
     #history-scroll {
       flex: 0 0 auto;
       padding: 48px 28px 0;
-      /* overflow hidden — content just scrolls off top naturally */
       overflow: hidden;
     }
 
@@ -107,32 +126,25 @@
       margin: 5px 0 5px 2px;
     }
 
-    /* This spacer shrinks as the input grows, pushing history up */
     #push-spacer { flex: 1; min-height: 0; }
 
-    /* Bottom: always visible input zone */
     #compose-bottom {
       flex: 0 0 auto;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
       padding: 0 28px 0;
     }
 
     #recipient-label {
-      font-size: 15px;
-      font-weight: 800;
+      font-size: 15px; font-weight: 800;
       color: rgba(140, 160, 255, 0.9);
       letter-spacing: 0.02em;
       margin-bottom: 4px;
     }
 
-    /* The real textarea — fully styled, looks like big text */
     #msg-input {
       width: 100%;
       background: transparent;
-      border: none;
-      outline: none;
-      resize: none;
+      border: none; outline: none; resize: none;
       -webkit-appearance: none;
       font-family: 'Nunito', 'Arial Rounded MT Bold', system-ui, sans-serif;
       font-size: clamp(30px, 9vw, 44px);
@@ -141,9 +153,8 @@
       letter-spacing: -0.01em;
       color: rgba(255,255,255,0.95);
       caret-color: rgba(255,255,255,0.9);
-      overflow: hidden; /* no internal scroll — we let layout push history up */
+      overflow: hidden;
       min-height: 1.18em;
-      /* iOS fix */
       -webkit-text-fill-color: rgba(255,255,255,0.95);
     }
 
@@ -153,18 +164,16 @@
     }
 
     #keyboard-spacer {
-      height: 0;
-      flex-shrink: 0;
+      height: 0; flex-shrink: 0;
       transition: height 0.25s ease;
     }
 
     /* ══════════════════════
-       SEND ANIMATION OVERLAY
+       SEND ANIMATION
     ══════════════════════ */
     #send-anim {
       position: absolute; inset: 0;
-      pointer-events: none;
-      opacity: 0;
+      pointer-events: none; opacity: 0;
       display: flex; flex-direction: column;
       overflow: hidden;
     }
@@ -188,15 +197,13 @@
     #send-recipient-ghost {
       font-size: 15px; font-weight: 800;
       color: rgba(140, 160, 255, 0.9);
-      letter-spacing: 0.02em;
-      margin-bottom: 4px;
+      letter-spacing: 0.02em; margin-bottom: 4px;
     }
 
     #send-msg-shrink {
       font-weight: 900; line-height: 1.18;
       color: rgba(255,255,255,0.95);
-      letter-spacing: -0.01em;
-      word-break: break-word;
+      letter-spacing: -0.01em; word-break: break-word;
     }
 
     #send-line {
@@ -234,10 +241,14 @@
 
   <!-- LANDING -->
   <div id="landing">
-    <div id="quote-text"></div>
+    <div id="quote-container">
+      <div class="quote-slot visible" id="quote-a"></div>
+      <div class="quote-slot hidden"  id="quote-b"></div>
+    </div>
     <div id="divider"></div>
     <div id="landing-spacer"></div>
     <div id="bottom-prompt">Who are you<br>writing to?</div>
+    <div id="privacy-note">We do not store any content</div>
   </div>
 
   <!-- COMPOSE -->
@@ -270,32 +281,50 @@
 (function() {
 
 const QUOTES = [
-  "What we have once\nenjoyed we can\nnever lose.",
-  "Unable are the loved\nto die. For love is\nimmortality.",
-  "Grief is the price\nwe pay for love.",
-  "Love leaves a memory\nno one can steal.",
-  "The song is ended,\nbut the melody\nlingers on.",
-  "They live on in\nthe quiet spaces.",
-  "The sky holds\nwhat we cannot.",
+  "What we have once enjoyed
+we can never lose.",
+  "Unable are the loved to die.
+For love is immortality.",
+  "Grief is the price
+we pay for love.",
+  "Love leaves a memory
+no one can steal.",
+  "The song is ended,
+but the melody
+lingers on.",
+  "They live on in
+the quiet spaces.",
+  "The sky holds
+what we cannot.",
   "Love does not end.",
-  "Say what you\nneed to say.",
-  "Send it into\nthe open air.",
-  "Memory is a form\nof presence.",
-  "Not gone.\nJust elsewhere.",
+  "Say what you
+need to say.",
+  "Send it into
+the open air.",
+  "Memory is a form
+of presence.",
+  "Not gone.
+Just elsewhere.",
   "Still with you.",
-  "Write what you\nwish you could say."
+  "Write what you
+wish you could say."
 ];
 
-let recipientName = sessionStorage.getItem('aether_name') || '';
-let phase = recipientName ? 'ready' : 'name';
+// Always reset on page load — refresh = fresh start
+sessionStorage.removeItem('aether_name');
+
+let recipientName = '';
+let phase = 'name';
 let quoteIdx = Math.floor(Math.random() * QUOTES.length);
 let quoteTimer = null;
+let activeSlot = 'a'; // which slot is currently visible
 let sentMessages = [];
 let isSending = false;
 let keyboardHeight = 0;
 
 const landingEl      = document.getElementById('landing');
-const quoteTextEl    = document.getElementById('quote-text');
+const quoteA         = document.getElementById('quote-a');
+const quoteB         = document.getElementById('quote-b');
 const bottomPrompt   = document.getElementById('bottom-prompt');
 const composeEl      = document.getElementById('compose');
 const historyScroll  = document.getElementById('history-scroll');
@@ -309,7 +338,6 @@ const sendLine       = document.getElementById('send-line');
 const sendBall       = document.getElementById('send-ball');
 const sendRecipGhost = document.getElementById('send-recipient-ghost');
 const sendKbGhost    = document.getElementById('send-keyboard-ghost');
-const pushSpacer     = document.getElementById('push-spacer');
 
 // Stars
 for (let i = 0; i < 22; i++) {
@@ -320,16 +348,37 @@ for (let i = 0; i < 22; i++) {
   document.body.appendChild(s);
 }
 
-// Quotes
-function renderQuote(animate) {
-  const text = QUOTES[quoteIdx].replace(/\n/g,'<br>');
-  if (!animate) { quoteTextEl.innerHTML = text; return; }
-  quoteTextEl.classList.add('fading');
-  setTimeout(() => { quoteTextEl.innerHTML = text; quoteTextEl.classList.remove('fading'); }, 700);
+// ── QUOTES — dual-slot crossfade (no artifacts) ──
+function currentSlotEl()  { return activeSlot === 'a' ? quoteA : quoteB; }
+function inactiveSlotEl() { return activeSlot === 'a' ? quoteB : quoteA; }
+
+function setQuoteText(el, text) {
+  el.innerHTML = text.replace(/
+/g, '<br>');
 }
+
+function showInitialQuote() {
+  setQuoteText(quoteA, QUOTES[quoteIdx]);
+  quoteA.classList.remove('hidden'); quoteA.classList.add('visible');
+  quoteB.classList.remove('visible'); quoteB.classList.add('hidden');
+  activeSlot = 'a';
+}
+
+function rotateQuote() {
+  quoteIdx = (quoteIdx + 1) % QUOTES.length;
+  const incoming = inactiveSlotEl();
+  const outgoing = currentSlotEl();
+  // Pre-load incoming while hidden
+  setQuoteText(incoming, QUOTES[quoteIdx]);
+  // Crossfade
+  outgoing.classList.remove('visible'); outgoing.classList.add('hidden');
+  incoming.classList.remove('hidden');  incoming.classList.add('visible');
+  activeSlot = activeSlot === 'a' ? 'b' : 'a';
+}
+
 function startQuotes() {
-  renderQuote(false);
-  quoteTimer = setInterval(() => { quoteIdx = (quoteIdx+1)%QUOTES.length; renderQuote(true); }, 10000);
+  showInitialQuote();
+  quoteTimer = setInterval(rotateQuote, 10000);
 }
 function stopQuotes() { clearInterval(quoteTimer); }
 
@@ -343,38 +392,39 @@ if (window.visualViewport) {
   });
 }
 
-// Auto-resize textarea and push history up
+// Auto-resize textarea
 function resizeInput() {
   msgInput.style.height = 'auto';
   msgInput.style.height = msgInput.scrollHeight + 'px';
 }
 
 // ── NAME COLLECTION ──
-// We reuse the landing bottom-prompt as a live text display,
-// with a hidden input trick for name phase
 let nameInputEl = null;
 
 function startNameCollection() {
   bottomPrompt.classList.add('active');
   bottomPrompt.textContent = '';
 
-  // Create a transparent overlay input for name
   nameInputEl = document.createElement('input');
   nameInputEl.type = 'text';
   nameInputEl.autocomplete = 'off';
   nameInputEl.autocapitalize = 'words';
   nameInputEl.style.cssText = `
-    position:fixed; top:0; left:0; width:100%; height:100%;
-    opacity:0; z-index:10; font-size:16px;
-    background:transparent; border:none; outline:none;
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    opacity:0;z-index:10;font-size:16px;
+    background:transparent;border:none;outline:none;
   `;
   document.body.appendChild(nameInputEl);
 
   nameInputEl.addEventListener('input', () => {
     const v = nameInputEl.value;
-    bottomPrompt.classList.toggle('active', v.length > 0);
-    bottomPrompt.textContent = v || '';
-    if (!v) { bottomPrompt.innerHTML = 'Who are you<br>writing to?'; }
+    if (v) {
+      bottomPrompt.classList.add('active');
+      bottomPrompt.textContent = v;
+    } else {
+      bottomPrompt.classList.remove('active');
+      bottomPrompt.innerHTML = 'Who are you<br>writing to?';
+    }
   });
 
   nameInputEl.addEventListener('keydown', (e) => {
@@ -393,7 +443,6 @@ function confirmName() {
   const name = nameInputEl.value.trim();
   if (!name) return;
   recipientName = name;
-  sessionStorage.setItem('aether_name', name);
   phase = 'ready';
   document.body.removeChild(nameInputEl);
   nameInputEl = null;
@@ -464,7 +513,6 @@ function triggerSend() {
   composeEl.classList.remove('active');
   msgInput.blur();
 
-  // Snapshot
   sendHistTop.innerHTML = historyScroll.innerHTML;
   sendRecipGhost.textContent = recipientName;
   sendKbGhost.style.height = keyboardHeight + 'px';
@@ -482,24 +530,20 @@ function triggerSend() {
 
   requestAnimationFrame(() => {
     setTimeout(() => {
-      // Shrink — stays visible
       sendMsgShrink.style.transition = 'font-size 0.65s cubic-bezier(0.4,0,0.2,1)';
       sendMsgShrink.style.fontSize = '13px';
 
-      // Line drops
       setTimeout(() => {
         sendLine.style.transition = 'height 0.65s ease';
         sendLine.style.height = '110px';
       }, 200);
 
-      // Ball
       setTimeout(() => {
         sendBall.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
         sendBall.style.opacity = '1';
         sendBall.style.transform = 'scale(1)';
       }, 820);
 
-      // Fade out, return
       setTimeout(() => {
         sendAnimEl.style.transition = 'opacity 0.4s ease';
         sendAnimEl.style.opacity = '0';
@@ -520,7 +564,6 @@ function returnToCompose() {
   phase = 'typing';
   msgInput.value = '';
   msgInput.style.height = 'auto';
-
   renderHistory();
   composeEl.classList.add('active');
   msgInput.focus();
@@ -541,9 +584,6 @@ composeEl.addEventListener('click', () => { msgInput.focus(); });
 
 // ── INIT ──
 startQuotes();
-if (phase === 'ready') {
-  bottomPrompt.innerHTML = 'Write your<br>message here';
-}
 landingEl.style.opacity = '0';
 setTimeout(() => { landingEl.style.transition = 'opacity 1s ease'; landingEl.style.opacity = '1'; }, 100);
 
