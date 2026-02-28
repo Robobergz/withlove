@@ -59,6 +59,8 @@
     #send-row.visible { opacity: 1; pointer-events: all; }
     #send-btn { background: rgba(255,255,255,0.18); border: none; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: rgba(255,255,255,0.9); cursor: pointer; -webkit-tap-highlight-color: transparent; backdrop-filter: blur(4px); transition: background 0.15s ease, transform 0.1s ease; }
     #send-btn:active { background: rgba(255,255,255,0.32); transform: scale(0.94); }
+    #input-error { font-size: 13px; font-weight: 800; color: rgba(255,120,120,0.9); letter-spacing: 0.02em; margin-top: 6px; min-height: 18px; opacity: 0; transition: opacity 0.2s ease; }
+    #input-error.visible { opacity: 1; }
     #keyboard-spacer { height: 0; flex-shrink: 0; transition: height 0.25s ease; }
     #send-anim { position: absolute; inset: 0; pointer-events: none; opacity: 0; display: flex; flex-direction: column; overflow: hidden; }
     #send-history-top { flex: 0 0 auto; padding: 48px 28px 0; display: flex; flex-direction: column; align-items: flex-start; }
@@ -120,6 +122,7 @@
       <div id="recipient-label"></div>
       <textarea id="msg-input" rows="1" placeholder="Write ..."></textarea>
       <div id="send-row"><button id="send-btn">↑</button></div>
+      <div id="input-error"></div>
       <div id="keyboard-spacer"></div>
     </div>
   </div>
@@ -192,6 +195,7 @@ var sendRecipGhost = document.getElementById('send-recipient-ghost');
 var sendKbGhost    = document.getElementById('send-keyboard-ghost');
 var sendRow        = document.getElementById('send-row');
 var sendBtn        = document.getElementById('send-btn');
+var inputError     = document.getElementById('input-error');
 var newBtn         = document.getElementById('new-btn');
 var counterEl      = document.getElementById('about-counter-number');
 
@@ -343,9 +347,66 @@ function resizeInput() {
   }
 }
 
+var errorTimer = null;
+
+function showError(msg) {
+  inputError.textContent = msg;
+  inputError.classList.add('visible');
+  clearTimeout(errorTimer);
+  errorTimer = setTimeout(function() {
+    inputError.classList.remove('visible');
+  }, 3000);
+}
+
+function clearError() {
+  inputError.classList.remove('visible');
+  clearTimeout(errorTimer);
+}
+
+function isValidMessage(text) {
+  var t = text.trim();
+
+  // Reject HTML tags
+  if (/<[^>]+>/.test(t)) return { valid: false, reason: 'Please write a message, not code.' };
+
+  // Reject anything that looks like code: common patterns
+  if (/[{}\[\];]/.test(t)) return { valid: false, reason: 'Please write a message, not code.' };
+
+  // Reject script/function/var/const/let keywords
+  if (/\b(function|const|let|var|return|if|else|for|while|import|export|class|script|html|div|span|href|src|<\/|\/\*|\*\/|=>)\b/i.test(t)) {
+    return { valid: false, reason: 'Please write a message, not code.' };
+  }
+
+  // Reject URLs
+  if (/https?:\/\/|www\./i.test(t)) return { valid: false, reason: 'Please write a personal message.' };
+
+  // Must contain at least one word made of letters (rules out pure symbols/numbers)
+  if (!/[a-zA-Z]{2,}/.test(t)) return { valid: false, reason: 'Please write something in words.' };
+
+  return { valid: true };
+}
+
+function attemptSend() {
+  var text = msgInput.value;
+  if (!text.trim()) return;
+
+  var check = isValidMessage(text);
+  if (!check.valid) {
+    showError(check.reason);
+    // Clear the input immediately
+    msgInput.value = '';
+    msgInput.style.height = 'auto';
+    sendRow.classList.remove('visible');
+    return;
+  }
+
+  clearError();
+  triggerSend();
+}
+
 sendBtn.addEventListener('click', function(e) {
   e.preventDefault();
-  if (msgInput.value.trim()) triggerSend();
+  attemptSend();
 });
 
 // Name collection
@@ -532,7 +593,7 @@ function enterTyping() {
 msgInput.addEventListener('input', resizeInput);
 msgInput.addEventListener('keydown', function(e) {
   if ((e.key === 'Enter' || e.keyCode === 13) && !e.shiftKey && msgInput.value.trim()) {
-    e.preventDefault(); triggerSend();
+    e.preventDefault(); attemptSend();
   }
 });
 
