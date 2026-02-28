@@ -187,47 +187,63 @@ var counterEl      = document.getElementById('about-counter-number');
 var SUPA_URL = 'https://jfzktksybjtwhbmnkhhx.supabase.co';
 var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impmemt0a3N5Ymp0d2hibW5raGh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzMDk4NzAsImV4cCI6MjA4Nzg4NTg3MH0.zI1A4y_C38EFgR8ERS1XyW3x-QceAQmYkrGpq57Zngk';
 
-function supaFetch(path, options) {
-  return fetch(SUPA_URL + '/rest/v1/' + path, Object.assign({
-    headers: {
-      'apikey': SUPA_KEY,
-      'Authorization': 'Bearer ' + SUPA_KEY,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation'
-    }
-  }, options));
-}
+var SUPA_HEADERS = {
+  'apikey': SUPA_KEY,
+  'Authorization': 'Bearer ' + SUPA_KEY,
+  'Content-Type': 'application/json'
+};
 
-// Load global count from Supabase
+// Load global count
 function loadCount() {
-  supaFetch('Counter?id=eq.1&select=count')
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data && data[0] && data[0].count !== undefined) {
-        counterEl.textContent = Number(data[0].count).toLocaleString();
-      }
-    })
-    .catch(function() { /* silently fail — counter just won't update */ });
+  fetch(SUPA_URL + '/rest/v1/Counter?id=eq.1&select=count', {
+    headers: SUPA_HEADERS
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data && data[0] && data[0].count !== undefined) {
+      counterEl.textContent = Number(data[0].count).toLocaleString();
+    }
+  })
+  .catch(function(e) { console.log('loadCount error', e); });
 }
 
-// Increment global count in Supabase using RPC
+// Atomically increment using Supabase RPC (stored procedure)
 function incrementCount() {
-  // Use rpc to atomically increment so concurrent users don't clash
-  supaFetch('Counter?id=eq.1', {
-    method: 'GET'
+  // First try RPC, fall back to read-patch
+  fetch(SUPA_URL + '/rest/v1/rpc/increment_counter', {
+    method: 'POST',
+    headers: SUPA_HEADERS,
+    body: JSON.stringify({})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(newCount) {
+    if (typeof newCount === 'number') {
+      counterEl.textContent = newCount.toLocaleString();
+    } else {
+      // fallback: read then patch
+      patchCount();
+    }
+  })
+  .catch(function() { patchCount(); });
+}
+
+function patchCount() {
+  fetch(SUPA_URL + '/rest/v1/Counter?id=eq.1&select=count', {
+    headers: SUPA_HEADERS
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
     var current = (data && data[0]) ? Number(data[0].count) : 0;
     var next = current + 1;
-    return supaFetch('Counter?id=eq.1', {
+    return fetch(SUPA_URL + '/rest/v1/Counter?id=eq.1', {
       method: 'PATCH',
+      headers: Object.assign({}, SUPA_HEADERS, { 'Prefer': 'return=minimal' }),
       body: JSON.stringify({ count: next })
     }).then(function() {
       counterEl.textContent = next.toLocaleString();
     });
   })
-  .catch(function() { /* silently fail */ });
+  .catch(function(e) { console.log('patchCount error', e); });
 }
 
 loadCount();
