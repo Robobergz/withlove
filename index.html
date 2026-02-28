@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,6 +24,9 @@
     #about-body { font-size: 16px; font-weight: 800; line-height: 1.65; color: rgba(255,255,255,0.7); letter-spacing: 0.01em; }
     #about-body p + p { margin-top: 16px; }
     #about-close-hint { margin-top: 40px; font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.3); letter-spacing: 0.08em; text-transform: uppercase; }
+    #about-counter { margin-top: 36px; padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.1); }
+    #about-counter-number { font-size: clamp(42px, 12vw, 64px); font-weight: 900; color: rgba(255,255,255,0.92); line-height: 1; letter-spacing: -0.02em; }
+    #about-counter-label { font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.35); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 6px; }
     #landing { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 48px 28px 20px; transition: opacity 0.4s ease, transform 0.4s ease; }
     #quote-container { height: 38vh; overflow: hidden; position: relative; }
     .quote-slot { position: absolute; top: 0; left: 0; right: 0; font-size: clamp(28px, 8.5vw, 42px); font-weight: 900; line-height: 1.18; color: rgba(255,255,255,0.92); letter-spacing: -0.01em; transition: opacity 0.8s ease; }
@@ -80,6 +84,10 @@
       <p>It simply gives you a small, tangible moment — a gesture — to release what you're holding.</p>
       <p>You write it.</p>
     </div>
+    <div id="about-counter">
+      <div id="about-counter-number">0</div>
+      <div id="about-counter-label">Messages sent</div>
+    </div>
     <div id="about-close-hint">Tap anywhere to close</div>
   </div>
 </div>
@@ -92,7 +100,7 @@
     <div id="divider"></div>
     <div id="landing-spacer"></div>
     <div id="bottom-prompt">Who are you<br>writing to?</div>
-    <div id="privacy-note">We do not store any content</div>
+    <div id="privacy-note">No messages are saved.</div>
   </div>
   <div id="constellation"><svg id="const-svg"></svg></div>
   <div id="compose">
@@ -173,6 +181,56 @@ var sendRecipGhost = document.getElementById('send-recipient-ghost');
 var sendKbGhost    = document.getElementById('send-keyboard-ghost');
 var sendRow        = document.getElementById('send-row');
 var sendBtn        = document.getElementById('send-btn');
+var counterEl      = document.getElementById('about-counter-number');
+
+// Supabase config
+var SUPA_URL = 'https://jfzktksybjtwhbmnkhhx.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impmemt0a3N5Ymp0d2hibW5raGh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzMDk4NzAsImV4cCI6MjA4Nzg4NTg3MH0.zI1A4y_C38EFgR8ERS1XyW3x-QceAQmYkrGpq57Zngk';
+
+function supaFetch(path, options) {
+  return fetch(SUPA_URL + '/rest/v1/' + path, Object.assign({
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    }
+  }, options));
+}
+
+// Load global count from Supabase
+function loadCount() {
+  supaFetch('Counter?id=eq.1&select=count')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data && data[0] && data[0].count !== undefined) {
+        counterEl.textContent = Number(data[0].count).toLocaleString();
+      }
+    })
+    .catch(function() { /* silently fail — counter just won't update */ });
+}
+
+// Increment global count in Supabase using RPC
+function incrementCount() {
+  // Use rpc to atomically increment so concurrent users don't clash
+  supaFetch('Counter?id=eq.1', {
+    method: 'GET'
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var current = (data && data[0]) ? Number(data[0].count) : 0;
+    var next = current + 1;
+    return supaFetch('Counter?id=eq.1', {
+      method: 'PATCH',
+      body: JSON.stringify({ count: next })
+    }).then(function() {
+      counterEl.textContent = next.toLocaleString();
+    });
+  })
+  .catch(function() { /* silently fail */ });
+}
+
+loadCount();
 
 // Stars
 for (var i = 0; i < 22; i++) {
@@ -501,6 +559,7 @@ function triggerSend() {
           sendAnimEl.style.transition = '';
           isSending = false;
           sentMessages.push(msg);
+          incrementCount();
           returnToCompose();
         }, 420);
       }, 1700);
