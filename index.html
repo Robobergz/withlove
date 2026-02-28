@@ -42,10 +42,10 @@
     #const-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
     #compose { position: absolute; inset: 0; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; overflow: hidden; }
     #compose.active { opacity: 1; pointer-events: all; }
-    #history-scroll { flex: 0 0 auto; padding: 48px 28px 0; overflow: hidden; }
+    #history-scroll { flex: 1; min-height: 0; padding: 48px 28px 0; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; justify-content: flex-end; }
+    #history-scroll::-webkit-scrollbar { display: none; }
     .history-msg { font-size: clamp(13px, 4vw, 18px); font-weight: 900; line-height: 1.2; color: rgba(255,255,255,0.5); letter-spacing: -0.01em; }
     .history-connector { width: 2px; height: 24px; background: rgba(255,255,255,0.3); border-radius: 2px; margin: 5px 0 5px 2px; }
-    #push-spacer { flex: 1; min-height: 0; }
     #compose-bottom { flex: 0 0 auto; display: flex; flex-direction: column; padding: 0 28px 0; }
     #recipient-label { font-size: 15px; font-weight: 800; color: rgba(140,160,255,0.9); letter-spacing: 0.02em; margin-bottom: 4px; }
     #msg-input { width: 100%; background: transparent; border: none; outline: none; resize: none; -webkit-appearance: none; font-family: 'Nunito', 'Arial Rounded MT Bold', system-ui, sans-serif; font-size: clamp(30px, 9vw, 44px); font-weight: 900; line-height: 1.18; letter-spacing: -0.01em; color: rgba(255,255,255,0.95); caret-color: rgba(255,255,255,0.9); overflow: hidden; min-height: 1.18em; -webkit-text-fill-color: rgba(255,255,255,0.95); }
@@ -105,7 +105,6 @@
   <div id="constellation"><svg id="const-svg"></svg></div>
   <div id="compose">
     <div id="history-scroll"></div>
-    <div id="push-spacer"></div>
     <div id="compose-bottom">
       <div id="recipient-label"></div>
       <textarea id="msg-input" rows="1" placeholder="Write ..."></textarea>
@@ -542,6 +541,8 @@ function renderHistory() {
     conn2.className = 'history-connector';
     historyScroll.appendChild(conn2);
   }
+  // Scroll to bottom so latest message is visible, user can scroll up for older ones
+  historyScroll.scrollTop = historyScroll.scrollHeight;
 }
 
 function triggerSend() {
