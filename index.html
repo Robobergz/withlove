@@ -46,6 +46,10 @@
     #recipient-label { font-size: 15px; font-weight: 800; color: rgba(140,160,255,0.9); letter-spacing: 0.02em; margin-bottom: 4px; }
     #msg-input { width: 100%; background: transparent; border: none; outline: none; resize: none; -webkit-appearance: none; font-family: 'Nunito', 'Arial Rounded MT Bold', system-ui, sans-serif; font-size: clamp(30px, 9vw, 44px); font-weight: 900; line-height: 1.18; letter-spacing: -0.01em; color: rgba(255,255,255,0.95); caret-color: rgba(255,255,255,0.9); overflow: hidden; min-height: 1.18em; -webkit-text-fill-color: rgba(255,255,255,0.95); }
     #msg-input::placeholder { color: rgba(255,255,255,0.45); -webkit-text-fill-color: rgba(255,255,255,0.45); }
+    #send-row { display: flex; justify-content: flex-end; padding: 10px 0 6px; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+    #send-row.visible { opacity: 1; pointer-events: all; }
+    #send-btn { background: rgba(255,255,255,0.18); border: none; border-radius: 50px; padding: 8px 22px; font-family: 'Nunito', system-ui, sans-serif; font-size: 15px; font-weight: 900; color: rgba(255,255,255,0.9); letter-spacing: 0.04em; cursor: pointer; -webkit-tap-highlight-color: transparent; backdrop-filter: blur(4px); transition: background 0.15s ease, transform 0.1s ease; }
+    #send-btn:active { background: rgba(255,255,255,0.32); transform: scale(0.94); }
     #keyboard-spacer { height: 0; flex-shrink: 0; transition: height 0.25s ease; }
     #send-anim { position: absolute; inset: 0; pointer-events: none; opacity: 0; display: flex; flex-direction: column; overflow: hidden; }
     #send-history-top { flex: 0 0 auto; padding: 48px 28px 0; display: flex; flex-direction: column; align-items: flex-start; }
@@ -97,6 +101,7 @@
     <div id="compose-bottom">
       <div id="recipient-label"></div>
       <textarea id="msg-input" rows="1" placeholder="Write ..."></textarea>
+      <div id="send-row"><button id="send-btn">Send ↑</button></div>
       <div id="keyboard-spacer"></div>
     </div>
   </div>
@@ -166,6 +171,8 @@ var sendLine       = document.getElementById('send-line');
 var sendBall       = document.getElementById('send-ball');
 var sendRecipGhost = document.getElementById('send-recipient-ghost');
 var sendKbGhost    = document.getElementById('send-keyboard-ghost');
+var sendRow        = document.getElementById('send-row');
+var sendBtn        = document.getElementById('send-btn');
 
 // Stars
 for (var i = 0; i < 22; i++) {
@@ -242,7 +249,18 @@ if (window.visualViewport) {
 function resizeInput() {
   msgInput.style.height = 'auto';
   msgInput.style.height = msgInput.scrollHeight + 'px';
+  // Show send button only when there is text
+  if (msgInput.value.trim()) {
+    sendRow.classList.add('visible');
+  } else {
+    sendRow.classList.remove('visible');
+  }
 }
+
+sendBtn.addEventListener('click', function(e) {
+  e.preventDefault();
+  if (msgInput.value.trim()) triggerSend();
+});
 
 // Name collection
 var nameInputEl = null;
@@ -419,6 +437,7 @@ function enterTyping() {
   renderHistory();
   msgInput.value = '';
   msgInput.style.height = 'auto';
+  sendRow.classList.remove('visible');
   composeEl.classList.add('active');
   msgInput.focus();
   keyboardSpacer.style.height = keyboardHeight + 'px';
@@ -492,6 +511,7 @@ function triggerSend() {
 function returnToCompose() {
   phase = 'typing';
   msgInput.value = ''; msgInput.style.height = 'auto';
+  sendRow.classList.remove('visible');
   renderHistory();
   composeEl.classList.add('active');
   msgInput.focus();
